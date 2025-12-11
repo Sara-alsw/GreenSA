@@ -1,1 +1,1755 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>أبشر | لوحة التحكم البيئية الموحدة</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load Chart.js for visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+    
+    <!-- Font: Cairo (Same as Absher) -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-color: #f8fafc; /* slate-50 */
+        }
+        /* إخفاء شريط التمرير */
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        
+        /* Animation Styles (Reused from previous files) */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fadeIn {
+            animation: fadeIn 0.5s ease-out forwards;
+            opacity: 0; 
+        }
+        
+        /* Removed pulse-soft from global style to be activated only on click/hover */
+        @keyframes pulse-soft {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        .animate-pulse-soft {
+            animation: pulse-soft 2s infinite;
+        }
 
+        /* Modal specific styles */
+        .modal-enter { opacity: 0; }
+        .modal-enter-active { opacity: 1; transition: opacity 0.3s ease; }
+        .modal-content-enter-active {
+            transform: scale(1);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .modal-content-enter { transform: scale(0.9); }
+        .modal-exit-active { opacity: 0; transition: opacity 0.3s ease; }
+
+        /* Custom style for the Executive Mode to use different colors */
+        .executive-bg { background-image: linear-gradient(to bottom, #075985, #0f766e); } /* Cyan-900 to Teal-700 */
+        .executive-accent { color: #06b6d4; } /* Cyan-500 */
+        .executive-text-title { color: #22d3ee; } /* Cyan-300 */
+    </style>
+</head>
+<body class="text-slate-900 pb-20 min-h-screen">
+    
+    <!-- Shared Header -->
+    <header id="main-header" class="fixed top-0 left-0 right-0 z-50 transition-all duration-300 py-5">
+        <div class="max-w-md mx-auto px-6 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div id="menu-btn" class="p-2 rounded-full transition-colors backdrop-blur-md cursor-pointer">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+                </div>
+                <h1 id="header-title" class="text-xl font-bold transition-colors tracking-wide">
+                    أبشر | <span id="mode-text">أفراد</span>
+                </h1>
+            </div>
+            <div class="flex items-center gap-3">
+                <!-- Removed animate-pulse-soft class from here -->
+                <div id="ai-btn" class="p-2 rounded-full transition-colors backdrop-blur-md cursor-pointer hover:scale-105">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+                </div>
+                <div id="bell-btn" class="p-2 rounded-full transition-colors backdrop-blur-md cursor-pointer hover:bg-white/30">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Mode Switcher (Visible only when scrolled down/fixed header) -->
+    <div id="mode-switcher" class="fixed top-16 left-0 right-0 z-40 px-6 max-w-md mx-auto hidden pt-2 transition-all duration-300">
+        <div class="flex bg-slate-200 p-1 rounded-full text-sm font-semibold shadow-inner">
+            <button id="switch-individuals" data-mode="individuals" class="flex-1 text-center py-2 rounded-full transition-colors duration-300 text-slate-800 bg-white shadow-md">
+                أفراد
+            </button>
+            <button id="switch-business" data-mode="business" class="flex-1 text-center py-2 rounded-full transition-colors duration-300 text-slate-600 hover:bg-slate-300">
+                أعمال
+            </button>
+            <!-- NEW EXECUTIVE BUTTON -->
+            <button id="switch-executives" data-mode="executives" class="flex-1 text-center py-2 rounded-full transition-colors duration-300 text-slate-600 hover:bg-slate-300">
+                داش بورد صناع القرار
+            </button>
+        </div>
+    </div>
+
+    <!-- Hero Background Area (Changes color based on mode) -->
+    <div id="hero-background" class="absolute top-0 left-0 right-0 h-80 rounded-b-[3rem] overflow-hidden z-0 transition-all duration-500">
+        <div class="absolute inset-0 opacity-10" style="background-image: url('https://www.transparenttextures.com/patterns/leaf.png');"></div>
+        <div class="absolute -top-24 -left-24 w-64 h-64 rounded-full blur-3xl opacity-20"></div>
+        <div class="absolute top-20 right-0 w-80 h-80 rounded-full blur-3xl opacity-20"></div>
+    </div>
+
+    <!-- Main Content Container -->
+    <main class="relative z-10 max-w-md mx-auto px-6 pt-24">
+        
+        <!-- Content Container (Individuals & Business) -->
+        <div id="dashboard-content">
+            <!-- Content will be injected here -->
+        </div>
+
+    </main>
+    
+    <!-- QR Code Modal (Shared for both modes) -->
+    <div id="qr-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center hidden modal-exit" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        <div id="qr-modal-content" class="bg-white rounded-3xl p-6 shadow-2xl w-11/12 max-w-sm mx-auto transform modal-content-enter">
+            <div class="flex justify-between items-center mb-6">
+                <h3 id="modal-title" class="text-xl font-bold text-slate-800">رمز الهوية البيئية</h3>
+                <button id="close-qr-modal-btn" class="p-1 text-slate-500 hover:text-slate-800 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            <div class="flex justify-center mb-6">
+                <!-- Placeholder for a clean, scannable QR code -->
+                <div id="qr-code-display" class="w-48 h-48 bg-slate-100 p-4 rounded-xl border-4 border-emerald-500 shadow-xl">
+                    <img src="https://placehold.co/180x180/065f46/ffffff?text=Eco+ID+QR" alt="QR Code" class="w-full h-full object-contain">
+                </div>
+            </div>
+            <div class="text-center">
+                <p class="text-xs text-slate-500 mb-1">امسح هذا الرمز للتحقق من هويتك البيئية.</p>
+                <p class="text-sm font-bold text-slate-800" id="qr-user-info">محمد سعود | الذهبي</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Initiatives Modal (DALEEL) -->
+    <div id="initiatives-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center hidden modal-exit" role="dialog" aria-modal="true" aria-labelledby="initiatives-modal-title">
+        <div id="initiatives-modal-content" class="bg-white rounded-3xl p-6 shadow-2xl w-11/12 max-w-lg mx-auto transform modal-content-enter max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center pb-4 mb-4 border-b border-slate-100 sticky top-0 bg-white z-20">
+                <h3 id="initiatives-modal-title" class="text-xl font-bold text-indigo-700 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-indigo-500">
+                        <path d="M4 14.5V20a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5.5"/>
+                        <path d="M18 14l-6 6-6-6"/>
+                        <path d="M12 4v16"/>
+                    </svg>
+                    دليل المبادرات البيئية والحملات الوطنية
+                </h3>
+                <button id="close-initiatives-modal-btn" class="p-1 text-slate-500 hover:text-slate-800 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            
+            <div class="space-y-4">
+                <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-200">
+                    <h4 class="font-bold text-indigo-800 flex items-center gap-2 mb-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-indigo-600"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg>
+                        مبادرة السعودية الخضراء (التشجير)
+                    </h4>
+                    <p class="text-xs text-slate-600 leading-relaxed mb-2">
+                        تهدف إلى زراعة 10 مليارات شجرة في المملكة. تتضمن فعاليات موسمية للمشاركة المجتمعية والمؤسسية.
+                    </p>
+                    <div class="text-right">
+                        <span class="text-xs font-bold text-emerald-600">الأثر المتوقع: خفض 200 طن $\text{CO}_2$ مؤسسياً.</span>
+                    </div>
+                </div>
+                
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <h4 class="font-bold text-slate-800 flex items-center gap-2 mb-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-600"><path d="M22 10s-2 3-2 3h-2v3h4v-3h-2s-2-3-2-3z"/><path d="M14 6H2v14h12V6z"/></svg>
+                        برنامج كفاءة الطاقة للمنشآت
+                    </h4>
+                    <p class="text-xs text-slate-600 leading-relaxed mb-2">
+                        يتضمن معايير لترشيد استهلاك الكهرباء والمياه في المباني التجارية والصناعية لرفع التصنيف البيئي.
+                    </p>
+                    <div class="text-right">
+                        <span class="text-xs font-bold text-blue-600">الأثر المتوقع: نقاط تأثير شهرية بناءً على نسبة الخفض.</span>
+                    </div>
+                </div>
+                
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <h4 class="font-bold text-slate-800 flex items-center gap-2 mb-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-teal-600"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                        حملات التدوير الإلكتروني (جمع النفايات الخطرة)
+                    </h4>
+                    <p class="text-xs text-slate-600 leading-relaxed mb-2">
+                        تتيح للأفراد والشركات تسليم النفايات الإلكترونية والبطاريات لمراكز معتمدة للحصول على نقاط.
+                    </p>
+                    <div class="text-right">
+                        <span class="text-xs font-bold text-teal-600">الأثر المتوقع: نقاط فردية لكل كيلوجرام يتم تسليمه.</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Initiative Enrollment Modal (NEW) -->
+    <div id="enrollment-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center hidden modal-exit" role="dialog" aria-modal="true" aria-labelledby="enrollment-modal-title">
+        <div id="enrollment-modal-content" class="bg-white rounded-3xl p-6 shadow-2xl w-11/12 max-w-sm mx-auto transform modal-content-enter max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center pb-4 mb-4 border-b border-slate-100 sticky top-0 bg-white z-20">
+                <h3 id="enrollment-modal-title" class="text-xl font-bold text-slate-800 flex items-center gap-2">
+                    <span id="enrollment-icon">🌱</span>
+                    <span id="enrollment-title">تسجيل المشاركة في المبادرة</span>
+                </h3>
+                <button id="close-enrollment-modal-btn" class="p-1 text-slate-500 hover:text-slate-800 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            
+            <div class="space-y-4">
+                <!-- User Info Display (NEW) -->
+                <div class="bg-indigo-50 p-3 rounded-lg border border-indigo-200 text-xs">
+                    <p class="font-bold text-indigo-800 mb-1">بيانات المسجل:</p>
+                    <p>الاسم: <span id="enrollee-name">...</span></p>
+                    <p>الهوية/السجل: <span id="enrollee-id">...</span></p>
+                </div>
+                
+                <!-- Initiative Selection (NEW) -->
+                <div class="border border-slate-300 p-4 rounded-xl">
+                    <h4 class="font-bold text-slate-800 mb-2 flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M16 16l-4-4-4 4"/></svg>
+                        اختر المبادرة
+                    </h4>
+                    <select id="initiative-selector" class="w-full p-2 border border-slate-300 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500">
+                        <!-- Options populated by JS -->
+                    </select>
+                </div>
+                
+                <!-- Map Location (NEW Simulation) -->
+                <div class="border border-slate-300 p-4 rounded-xl">
+                    <h4 class="font-bold text-slate-800 mb-2 flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M12 21.5V22"/></svg>
+                        موقع المبادرة (مركز التدوير بجدة)
+                    </h4>
+                    <div class="w-full h-40 overflow-hidden rounded-lg border border-slate-200">
+                        <!-- Simulated Google Maps iframe -->
+                        <iframe id="initiative-map" src="https://maps.google.com/maps?q=Jeddah&t=&z=13&ie=UTF8&iwloc=&output=embed" frameborder="0" scrolling="no" class="w-full h-full"></iframe>
+                    </div>
+                </div>
+
+                <!-- Unified Enrollment Button -->
+                <div class="border border-indigo-200 p-4 rounded-xl">
+                    <h4 class="font-bold text-indigo-700 mb-2 flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 18"/><line x1="6" y1="12" x2="18" y2="12"/></svg>
+                        الخطوة النهائية: التأكيد وتفعيل الرمز
+                    </h4>
+                    <p id="location-status" class="text-xs text-red-500 mb-3">يجب تفعيل هذا الزر عند الوصول لموقع المبادرة.</p>
+                    <button id="enrollment-activation-btn" class="w-full bg-indigo-500 text-white px-3 py-2 rounded-lg text-sm font-bold hover:bg-indigo-600 transition-colors">
+                        تأكيد الموقع وتفعيل الرمز
+                    </button>
+                    
+                    <!-- Barcode Input (Appears ONLY after activation) -->
+                    <input type="text" id="barcode-input" placeholder="امسح الباركود أو أدخل الرمز الظاهر في الموقع" class="w-full p-2 border border-slate-300 rounded-lg text-sm focus:ring-green-500 focus:border-green-500 mt-3 hidden" dir="ltr">
+                    <button id="scan-barcode-btn" class="w-full mt-2 bg-green-500 text-white px-3 py-2 rounded-lg text-sm font-bold hover:bg-green-600 transition-colors hidden disabled:opacity-50" disabled>تأكيد الإنجاز والحصول على النقاط</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Notifications Modal (NEW) -->
+    <div id="notifications-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center hidden modal-exit" role="dialog" aria-modal="true" aria-labelledby="notifications-modal-title">
+        <div id="notifications-modal-content" class="bg-white rounded-3xl p-6 shadow-2xl w-11/12 max-w-sm mx-auto transform modal-content-enter max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center pb-4 mb-4 border-b border-slate-100 sticky top-0 bg-white z-20">
+                <h3 id="notifications-modal-title" class="text-xl font-bold text-blue-700 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-500"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+                    مركز الإشعارات
+                </h3>
+                <button id="close-notifications-modal-btn" class="p-1 text-slate-500 hover:text-slate-800 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            
+            <div id="notifications-list" class="space-y-3">
+                <div class="bg-blue-50 p-3 rounded-lg border-r-4 border-blue-400 text-sm">
+                    <p class="font-bold text-blue-800">تهنئة! 🎉</p>
+                    <p class="text-xs text-slate-600">تم تسجيل مشاركتك بنجاح في تحدي تدوير المخلفات. أُضيفت 20 نقطة إلى رصيدك.</p>
+                </div>
+                <div class="bg-yellow-50 p-3 rounded-lg border-r-4 border-yellow-400 text-sm">
+                    <p class="font-bold text-yellow-800">تذكير 🔔</p>
+                    <p class="text-xs text-slate-600">تبقى يوم واحد على موعد حملة التشجير الكبرى في المنطقة الوسطى. سجل الآن!</p>
+                </div>
+                <div class="bg-red-50 p-3 rounded-lg border-r-4 border-red-400 text-sm">
+                    <p class="font-bold text-red-800">تنبيه ⚠️</p>
+                    <p class="text-xs text-slate-600">تصنيف شركتك مهدد بالانخفاض بسبب تجاوز مؤشر استهلاك المياه. يرجى المراجعة.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Rewards Modal (Individuals Mode Specific) -->
+    <div id="rewards-modal" class="fixed inset-0 bg-black/70 backdrop-blur-md z-50 flex items-center justify-center hidden modal-exit" role="dialog" aria-modal="true" aria-labelledby="rewards-modal-title">
+        <div id="rewards-modal-content" class="bg-white rounded-3xl p-6 shadow-2xl w-11/12 max-w-lg mx-auto transform modal-content-enter max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center pb-4 mb-4 border-b border-slate-100 sticky top-0 bg-white z-20">
+                <h3 id="rewards-modal-title" class="text-xl font-bold text-emerald-700 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4H6z"/>
+                    <path d="M3 6h18"/>
+                    <path d="M16 10a4 4 0 0 1-8 0"/>
+                </svg>
+                    مركز المكافآت البيئية
+                </h3>
+                <button id="close-rewards-modal-btn" class="p-1 text-slate-500 hover:text-slate-800 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            <div class="mb-6">
+                <p class="text-center text-sm text-slate-600 mb-6 border-b pb-4">
+                    نقاطك الحالية: <span class="text-xl font-extrabold text-emerald-600 tabular-nums" id="modal-user-points">0</span> نقطة.
+                </p>
+                <!-- Rewards List - UPDATED WITH NEW THEMATIC REWARDS -->
+                <div id="rewards-list">
+                    <!-- Reward 1: Priority Appointment (1000 Points) -->
+                    <div class="reward-card bg-slate-50 p-4 rounded-xl border border-red-200 shadow-md mb-4 flex justify-between items-center transition-all duration-200 hover:bg-red-50">
+                        <div class="flex items-center gap-4">
+                            <div class="bg-red-100 p-3 rounded-full text-red-700">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="18"/><line x1="12" y1="15" x2="12" y2="15"/><line x1="12" y1="12" x2="12" y2="12"/></svg>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-slate-800">أولوية في حجز المواعيد الحكومية</h4>
+                                <p class="text-xs text-slate-500">ميزة استخدام مسار أسرع لخدمات أبشر ومراكز الخدمة.</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <span class="block text-sm font-bold mb-1 tabular-nums text-red-600">1000 نقطة</span>
+                            <button data-points="1000" class="redeem-btn text-xs bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled>استبدال</button>
+                        </div>
+                    </div>
+                    <!-- Reward 2: Vehicle Renewal Discount (500 Points) -->
+                    <div class="reward-card bg-slate-50 p-4 rounded-xl border border-red-200 shadow-md mb-4 flex justify-between items-center transition-all duration-200 hover:bg-red-50">
+                        <div class="flex items-center gap-4">
+                            <div class="bg-blue-100 p-3 rounded-full text-blue-700">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-9-4z"/><path d="M12 16h0"/><path d="M12 8v4"/></svg>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-slate-800">تخفيض 10% على رسوم تجديد الرخصة</h4>
+                                <p class="text-xs text-slate-500">ينطبق على رخصة القيادة أو رخصة سير المركبة.</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <span class="block text-sm font-bold mb-1 tabular-nums text-red-600">500 نقطة</span>
+                            <button data-points="500" class="redeem-btn text-xs bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled>استبدال</button>
+                        </div>
+                    </div>
+                    <!-- Reward 3: Organic Store Voucher (150 Points) -->
+                    <div class="reward-card bg-slate-50 p-4 rounded-xl border border-red-200 shadow-md mb-4 flex justify-between items-center transition-all duration-200 hover:bg-red-50">
+                        <div class="flex items-center gap-4">
+                            <div class="bg-green-100 p-3 rounded-full text-green-700">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a7 7 0 0 0-7 7c0 4.19 2.56 8.54 7 12a7 7 0 0 0 7-7 7 7 0 0 0-7-7z"/><path d="M12 4.41V4"/></svg>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-slate-800">قسيمة شرائية بقيمة 50 ريال لمتجر عضوي</h4>
+                                <p class="text-xs text-slate-500">لتشجيع دعم المنتجات المحلية الصديقة للبيئة.</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <span class="block text-sm font-bold mb-1 tabular-nums text-red-600">150 نقطة</span>
+                            <button data-points="150" class="redeem-btn text-xs bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled>استبدال</button>
+                        </div>
+                    </div>
+                    <!-- Reward 4: Fitness App Subscription (25 Points) -->
+                    <div class="reward-card bg-slate-50 p-4 rounded-xl border border-emerald-200 shadow-md mb-4 flex justify-between items-center transition-all duration-200 hover:bg-emerald-50">
+                        <div class="flex items-center gap-4">
+                            <div class="bg-purple-100 p-3 rounded-full text-purple-700">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 17H7a5 5 0 0 1-5-5 5 5 0 0 1 5-5h10a5 5 0 0 1 5 5 5 5 0 0 1-5 5z"/><path d="M15 12h-6"/></svg>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-slate-800">شهر مجاني في تطبيق لياقة</h4>
+                                <p class="text-xs text-slate-500">مكافأة لتحفيز المشي واستخدام وسائل النقل النظيفة.</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <span class="block text-sm font-bold mb-1 tabular-nums text-emerald-600">25 نقطة</span>
+                            <button data-points="25" class="redeem-btn text-xs bg-emerald-500 text-white px-3 py-1 rounded-lg hover:bg-emerald-600 transition-colors">استبدال</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Message Box (Used instead of alert) -->
+    <div id="message-box" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-4 py-3 rounded-xl shadow-2xl transition-all duration-300 transform scale-0 z-50 min-w-[280px] text-center">
+        <p id="message-text" class="font-bold text-sm"></p>
+    </div>
+
+    <script>
+        // --- DATA & STATE ---
+        let currentMode = 'individuals';
+        let userPoints = 78; // Individual's points
+        let businessPoints = 855; // Company's points (Your company: Al-Rawad)
+
+        // Simulated initiative list (Shared between individuals/business)
+        const initiativesList = {
+            '1': { name: 'حملة التشجير الكبرى', icon: '🌳', location: 'الرياض, حي الياسمين', points: '+300 نقطة', type: 'event' },
+            '2': { name: 'تحدي إعادة التدوير اليومي', icon: '♻️', location: 'جدة, مركز التدوير المركزي', points: '+20 نقطة', type: 'daily' },
+            '3': { name: 'فرز المخلفات البلاستيكية', icon: '🗑️', location: 'الدمام, نقطة تجميع 45', points: '+250 نقطة', type: 'monthly' },
+            // Business Specific
+            '4': { name: 'مشروع الطاقة المتجددة (ألواح شمسية)', icon: '☀️', location: 'مقر الشركة, السطح الشرقي', points: '+500 نقطة', type: 'strategic' },
+            '5': { name: 'تشجير محيط العمل', icon: '🌲', location: 'محيط العمل, البوابة الرئيسية', points: '+150 نقطة', type: 'event' },
+            '6': { name: 'حملة فرز المخلفات الأسبوعية', icon: '♻️', location: 'مستودع 7, المنطقة اللوجستية', points: '+50 نقطة أسبوعياً', type: 'weekly' }
+        };
+        
+        const individualData = {
+            titleColor: 'text-emerald-300',
+            bgColor: 'bg-gradient-to-b from-emerald-900 to-emerald-800',
+            accentColor: 'text-emerald-600',
+            lighterAccent: 'bg-emerald-50',
+            rank: 'الذهبي',
+            rankIcon: '🥇',
+            points: userPoints,
+            name: 'محمد سعود',
+            id: '10******89',
+            progressText: 'التقدم للمستوى الأخضر',
+            pointsRemaining: '12 نقطة متبقية',
+            progressWidth: 'w-[88%]', // 88% complete (78 points to 90 goal)
+            heroBgClasses: 'from-emerald-900 via-emerald-800 to-teal-900',
+            qrCodeBorder: 'border-emerald-500',
+            qrPlaceholder: 'https://placehold.co/180x180/065f46/ffffff?text=Eco+ID+QR',
+            gradientClasses: ['bg-gradient-to-b', 'from-emerald-900', 'to-emerald-800'],
+            challenges: ['1', '2', '3'] // IDs of challenges for this mode
+        };
+
+        const businessData = {
+            titleColor: 'text-blue-300',
+            bgColor: 'bg-gradient-to-b from-indigo-900 to-blue-900',
+            accentColor: 'text-blue-600',
+            lighterAccent: 'bg-blue-50',
+            rank: 'الفضي',
+            rankIcon: '🥈',
+            points: businessPoints,
+            name: 'شركة الرواد القابضة',
+            id: 'C.R. 51******22',
+            progressText: 'التقدم للمستوى الذهبي',
+            pointsRemaining: '145 نقطة متبقية',
+            progressWidth: 'w-[78%]', // 78% complete (855 points to 1000 goal)
+            heroBgClasses: 'from-indigo-900 via-indigo-800 to-cyan-900',
+            qrCodeBorder: 'border-blue-500',
+            qrPlaceholder: 'https://placehold.co/180x180/1e3a8a/ffffff?text=Business+ID+QR',
+            gradientClasses: ['bg-gradient-to-b', 'from-indigo-900', 'to-blue-900'],
+            challenges: ['4', '5', '6'] // IDs of challenges for this mode
+        };
+
+        const executiveData = {
+            titleColor: 'executive-text-title', // Cyan-300
+            bgColor: 'executive-bg', // Custom CSS class for gradient
+            accentColor: 'executive-accent', // Cyan-500
+            lighterAccent: 'bg-cyan-50',
+            totalImpact: 12.5, // Tonnes of CO2 avoided
+            regions: [
+                { name: 'الرياض', initiatives: 8, points: 5500 },
+                { name: 'جدة', initiatives: 4, points: 3000 },
+                { name: 'الدمام', initiatives: 3, points: 1200 },
+            ],
+            impactBreakdown: [
+                { category: 'الطاقة المتجددة', value: 45 },
+                { category: 'خفض المياه', value: 30 },
+                { category: 'إدارة النفايات', value: 15 },
+                { category: 'النقل المستدام', value: 10 },
+            ],
+            topCompetitors: [
+                { name: 'الرواد القابضة', points: 855000, rank: 1, isSelf: true },
+                { name: 'شركة التقدم الصناعي', points: 790000, rank: 2, isSelf: false },
+                { name: 'مجموعة الموارد الخضراء', points: 750000, rank: 3, isSelf: false },
+                { name: 'مؤسسة إعمار المستقبل', points: 610000, rank: 4, isSelf: false },
+                { name: 'شركة السهل للخدمات', points: 580000, rank: 5, isSelf: false },
+            ],
+            gradientClasses: ['executive-bg']
+        };
+
+        // --- DOM Selectors ---
+        const dashboardContent = document.getElementById('dashboard-content');
+        const header = document.getElementById('main-header');
+        const modeText = document.getElementById('mode-text');
+        const heroBackground = document.getElementById('hero-background');
+        const switchIndividuals = document.getElementById('switch-individuals');
+        const switchBusiness = document.getElementById('switch-business');
+        const switchExecutives = document.getElementById('switch-executives');
+        const modeSwitcher = document.getElementById('mode-switcher');
+        const qrModal = document.getElementById('qr-modal');
+        const closeQrModalBtn = document.getElementById('close-qr-modal-btn');
+        const rewardsModal = document.getElementById('rewards-modal');
+        const rewardsModalContent = document.getElementById('rewards-modal-content');
+        const closeRewardsModalBtn = document.getElementById('close-rewards-modal-btn');
+        const initiativesModal = document.getElementById('initiatives-modal');
+        const initiativesModalContent = document.getElementById('initiatives-modal-content');
+        const closeInitiativesModalBtn = document.getElementById('close-initiatives-modal-btn');
+        const enrollmentModal = document.getElementById('enrollment-modal');
+        const enrollmentModalContent = document.getElementById('enrollment-modal-content');
+        const closeEnrollmentModalBtn = document.getElementById('close-enrollment-modal-btn');
+        const notificationsModal = document.getElementById('notifications-modal');
+        const notificationsModalContent = document.getElementById('notifications-modal-content');
+        const closeNotificationsModalBtn = document.getElementById('close-notifications-modal-btn');
+        const enrollmentActivationBtn = document.getElementById('enrollment-activation-btn');
+        const scanBarcodeBtn = document.getElementById('scan-barcode-btn');
+        const barcodeInput = document.getElementById('barcode-input');
+        const initiativeSelector = document.getElementById('initiative-selector');
+        const initiativeMap = document.getElementById('initiative-map');
+
+        const modalUserPoints = document.getElementById('modal-user-points');
+        let regionChart = null;
+        let impactChart = null;
+        let qualityOfLifeChart = null;
+
+
+        // --- UTILITIES ---
+        
+        /** Shows a message box instead of using alert() */
+        function showMessage(message, duration = 3000) {
+            const messageBox = document.getElementById('message-box');
+            const messageText = document.getElementById('message-text');
+            messageText.textContent = message;
+            messageBox.classList.remove('hidden', 'scale-0');
+            messageBox.classList.add('scale-100');
+            setTimeout(() => {
+                messageBox.classList.remove('scale-100');
+                messageBox.classList.add('scale-0');
+                setTimeout(() => messageBox.classList.add('hidden'), 300);
+            }, duration);
+        }
+
+        /** Handles opening a modal with transition */
+        function openModal(modal, content) {
+            modal.classList.remove('hidden');
+            modal.classList.add('modal-enter-active');
+            content.classList.add('modal-content-enter-active');
+            document.body.style.overflow = 'hidden'; // Prevent body scroll
+        }
+
+        /** Handles closing a modal with transition */
+        function closeModal(modal, content) {
+            modal.classList.remove('modal-enter-active');
+            modal.classList.add('modal-exit-active');
+            content.classList.remove('modal-content-enter-active');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('modal-exit-active');
+                document.body.style.overflow = '';
+            }, 300);
+        }
+
+        /** NEW: Adds a notification to the list and flashes the bell icon */
+        function addNotification(title, message, type = 'blue') {
+            const notification = document.createElement('div');
+            notification.className = `bg-${type}-50 p-3 rounded-lg border-r-4 border-${type}-400 text-sm`;
+            notification.innerHTML = `<p class="font-bold text-${type}-800">${title}</p><p class="text-xs text-slate-600">${message}</p>`;
+            
+            const list = document.getElementById('notifications-list');
+            if (list) {
+                 list.prepend(notification); // Add to the top
+            }
+        }
+        
+        /** NEW: Simulates a geo-fence check and triggers a notification if successful */
+        function checkGeoFenceAndNotify() {
+            // Simulate that the user is near a major initiative location (e.g., Jeddah Recycling Center)
+            const isNearInitiative = true; 
+            const bellBtn = document.getElementById('bell-btn');
+
+            if (isNearInitiative) {
+                // Check if notification already exists to prevent spamming the list
+                const existingNotif = document.querySelector('#notifications-list .bg-green-50');
+                
+                if (!existingNotif) {
+                     addNotification(
+                        'قرب من المبادرة 📍', 
+                        'لقد أصبحت قريباً من مركز "تحدي إعادة التدوير اليومي". اضغط للتسجيل وتفعيل الباركود.', 
+                        'green'
+                    );
+                }
+                
+                // Always ensure the pulse effect is active if there is a new notification or unread items
+                if (bellBtn) {
+                    bellBtn.classList.add('animate-pulse-soft');
+                }
+            }
+        }
+        
+        /** Handles switching between modes */
+        function switchMode(newMode) {
+            if (newMode === currentMode) return;
+            currentMode = newMode;
+            const data = newMode === 'individuals' ? individualData : (newMode === 'business' ? businessData : executiveData);
+
+            // Start transition: Fade out content
+            if(dashboardContent) dashboardContent.classList.add('opacity-0');
+            
+            // Close any open modals before switching content
+            if (!rewardsModal.classList.contains('hidden')) { closeModal(rewardsModal, rewardsModalContent); }
+            if (!qrModal.classList.contains('hidden')) { closeModal(qrModal, document.getElementById('qr-modal-content')); }
+            if (!initiativesModal.classList.contains('hidden')) { closeModal(initiativesModal, initiativesModalContent); }
+            if (!enrollmentModal.classList.contains('hidden')) { closeModal(enrollmentModal, enrollmentModalContent); }
+            
+            // Wait for fade out, then update content and fade in
+            setTimeout(() => {
+                updateVisuals(data);
+                renderDashboard(newMode);
+                if(dashboardContent) dashboardContent.classList.remove('opacity-0');
+            }, 300); // Wait for CSS transition (0.3s)
+        }
+
+        /** Updates the state of the redemption buttons in the Rewards Modal */
+        function updateRedeemButtons(points) {
+            const redeemButtons = document.querySelectorAll('#rewards-list .redeem-btn');
+            
+            if (modalUserPoints) {
+                modalUserPoints.textContent = points;
+            }
+            
+            redeemButtons.forEach(button => {
+                const requiredPoints = parseInt(button.getAttribute('data-points'));
+                const isAffordable = points >= requiredPoints;
+                const card = button.closest('.reward-card');
+                
+                button.disabled = !isAffordable;
+                
+                // Styling updates
+                if (isAffordable) {
+                    button.classList.remove('bg-red-500', 'hover:bg-red-600');
+                    button.classList.add('bg-emerald-500', 'hover:bg-emerald-600');
+                    // Update card color to show it's affordable/available
+                    card.classList.remove('border-red-200', 'border-yellow-200', 'border-blue-200', 'border-green-200', 'hover:bg-red-50', 'hover:bg-yellow-50', 'hover:bg-blue-50', 'hover:bg-green-50');
+                    card.classList.add('border-emerald-200', 'hover:bg-emerald-50');
+                    const span = button.closest('div').querySelector('span');
+                    if (span) {
+                        span.classList.remove('text-red-600');
+                        span.classList.add('text-emerald-600');
+                    }
+                } else {
+                    button.classList.remove('bg-emerald-500', 'hover:bg-emerald-600');
+                    button.classList.add('bg-red-500', 'hover:bg-red-600');
+                    // Reset card color to indicate high cost/unavailable
+                    card.classList.remove('border-emerald-200', 'hover:bg-emerald-50', 'border-yellow-200', 'border-blue-200', 'border-green-200', 'hover:bg-yellow-50', 'hover:bg-blue-50', 'hover:bg-green-50');
+                    card.classList.add('border-red-200', 'hover:bg-red-50');
+                    const span = button.closest('div').querySelector('span');
+                    if (span) {
+                        span.classList.remove('text-emerald-600');
+                        span.classList.add('text-red-600');
+                    }
+                }
+            });
+        }
+        
+        /** NEW: Helper to update map iframe based on selected initiative location */
+        function updateMapAndDisplayLocation(initiativeName) {
+            if (!initiativeSelector || !initiativeMap) return;
+
+            const selectedOption = initiativeSelector.options[initiativeSelector.selectedIndex];
+            const location = selectedOption ? selectedOption.getAttribute('data-location') : 'الرياض';
+            
+            // Example: "Riyadh, حي الياسمين" -> Riyadh
+            const mapQuery = location.split(',')[0].trim(); 
+            
+            // Simulate Google Maps embed URL
+            initiativeMap.src = `https://maps.google.com/maps?q=${encodeURIComponent(mapQuery)}&t=&z=13&ie=UTF8&iwloc=&output=embed`;
+            
+            // Update modal title for location
+            const locationHeader = document.querySelector('#enrollment-modal .border.border-slate-300:nth-child(3) h4');
+            if (locationHeader) {
+                locationHeader.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M12 21.5V22"/></svg>
+                    موقع المبادرة (${location})
+                `;
+            }
+        }
+
+        // --- TEMPLATES ---
+        
+        // Template for the Eco Card (Header Card)
+        const generateEcoCard = (data) => `
+            <div class="mb-6 animate-fadeIn cursor-pointer" id="eco-card" style="animation-delay: 0ms;">
+                <div class="relative w-full aspect-[1.7/1] rounded-3xl overflow-hidden shadow-2xl transition-transform transform hover:scale-[1.02] duration-500 group">
+                    <!-- Background Gradient -->
+                    <div class="absolute inset-0 bg-gradient-to-br ${data.heroBgClasses}"></div>
+                    <!-- Decorative Elements -->
+                    <div class="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl"></div>
+                    <div class="absolute bottom-0 left-0 w-32 h-32 bg-yellow-400/10 rounded-full translate-y-1/2 -translate-x-1/2 blur-2xl"></div>
+                    <!-- Texture -->
+                    <div class="absolute inset-0 opacity-20" style="background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.15) 1px, transparent 0); background-size: 20px 20px;"></div>
+                    
+                    <div class="relative h-full p-6 flex flex-col justify-between text-white z-10">
+                        <!-- Top Section: User Info and QR Code Icon -->
+                        <div class="flex justify-between items-start">
+                            <div class="flex items-center gap-3">
+                                <div class="w-12 h-12 rounded-full bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center overflow-hidden">
+                                    ${data.name.includes('شركة') || data.name.includes('القابضة') ? 
+                                        `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white"><path d="M12 7V3L6 8l6 5V9l6-5z"/><path d="M22 17H2"/><path d="M2 17l10 5 10-5"/></svg>`
+                                        : 
+                                        `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`
+                                    }
+                                </div>
+                                <div class="text-right">
+                                    <h2 class="font-bold text-lg tracking-wide" id="user-name">${data.name}</h2>
+                                    <p class="${data === individualData ? 'text-emerald-200' : 'text-blue-200'} text-xs font-mono tracking-wider" id="user-id">${data.id}</p>
+                                </div>
+                            </div>
+                            <div class="bg-white/10 backdrop-blur-sm p-2 rounded-lg border border-white/10 shadow-lg text-xs font-bold uppercase">
+                                ${data.name.includes('شركة') || data.name.includes('القابضة') ? 'تصنيف الأعمال' : 'هوية بيئية'}
+                            </div>
+                        </div>
+                        <!-- Bottom Section: Rank and Points -->
+                        <div class="flex items-end justify-between">
+                            <div class="text-right">
+                                <span class="${data === individualData ? 'text-emerald-200' : 'text-blue-200'} text-xs uppercase tracking-wider block mb-1">التصنيف البيئي</span>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-2xl">${data.rankIcon}</span>
+                                    <span class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-200 to-yellow-500 shadow-sm" id="user-rank-name">
+                                        ${data.rank}
+                                    </span>
+                                </div
+                            </div>
+                            <div class="text-center">
+                                <div class="text-3xl font-bold tabular-nums tracking-tight" id="user-points">${data.points}</div>
+                                <div class="text-[10px] ${data === individualData ? 'text-emerald-200' : 'text-blue-200'} uppercase">نقطة</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Template for the Progress Bar
+        const generateProgressBar = (data) => `
+            <div class="bg-white/60 backdrop-blur-md border border-white p-4 rounded-2xl mb-6 flex items-center justify-between shadow-sm animate-fadeIn" style="animation-delay: 100ms;">
+                <div class="flex-1">
+                    <div class="flex justify-between text-xs mb-2 font-medium">
+                        <span class="text-slate-600">${data.progressText}</span>
+                        <span class="${data.accentColor}">${data.pointsRemaining}</span>
+                    </div>
+                    <div class="h-2 bg-slate-200 rounded-full overflow-hidden">
+                        <div class="h-full bg-gradient-to-r from-blue-400 to-blue-600 ${data.progressWidth} rounded-full shadow-[0_0_10px_rgba(59,130,246,0.5)]"></div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Template for the Executive Dashboard
+        const generateExecutiveDashboard = (data) => `
+            <div class="animate-fadeIn" style="animation-delay: 0ms;">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="executive-accent">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <polyline points="14 2 14 8 20 8"/>
+                            <line x1="16" y1="13" x2="8" y2="13"/>
+                            <line x1="16" y1="17" x2="8" y2="17"/>
+                            <polyline points="10 9 9 9 9 10"/>
+                        </svg>
+                        داش بورد صناع القرار
+                    </h2>
+                    <button class="bg-indigo-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-indigo-700 transition-colors shadow-md">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline-block align-middle ml-1"><polyline points="8 17 12 21 16 17"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.88 18.09A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 14.73"/></svg>
+                        تنزيل التقرير
+                    </button>
+                </div>
+                
+                <!-- KPI Cards Row -->
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <!-- KPI 1: Total Impact Points (Your Company) -->
+                    <div class="bg-white p-4 rounded-2xl shadow-lg border border-slate-100 animate-fadeIn" style="animation-delay: 100ms;">
+                        <div class="p-2.5 rounded-xl bg-green-50 text-green-600 w-fit mb-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 2-8.49V10Z"/></svg>
+                        </div>
+                        <p class="text-slate-500 text-xs font-medium mb-1">إجمالي نقاط التأثير (الرواد)</p>
+                        <div class="text-2xl font-bold text-slate-800 tabular-nums">${data.topCompetitors[0].points.toLocaleString('ar-SA')}</div>
+                        <span class="text-green-500 text-xs mt-1 block flex items-center gap-1">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="12 17 12 7 19 7"/></svg>
+                            +15% عن الربع الماضي
+                        </span>
+                    </div>
+
+                    <!-- KPI 2: Total CO2 Avoided -->
+                    <div class="bg-white p-4 rounded-2xl shadow-lg border border-slate-100 animate-fadeIn" style="animation-delay: 200ms;">
+                        <div class="p-2.5 rounded-xl bg-cyan-50 text-cyan-600 w-fit mb-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14.5V20a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5.5"/><path d="M18 14l-6 6-6-6"/><path d="M12 4v16"/></svg>
+                        </div>
+                        <p class="text-slate-500 text-xs font-medium mb-1">الأثر البيئي (طن $\text{CO}_2$)</p>
+                        <div class="text-2xl font-bold text-slate-800 tabular-nums">${data.totalImpact.toFixed(1)} طن</div>
+                        <span class="text-red-500 text-xs mt-1 block flex items-center gap-1">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="12 7 12 17 19 17"/></svg>
+                            -3% في الربع الأخير
+                        </span>
+                    </div>
+                </div>
+                
+                <!-- Top Competitors Leaderboard -->
+                <div class="bg-white p-4 rounded-2xl shadow-lg border border-slate-100 mb-6 animate-fadeIn" style="animation-delay: 250ms;">
+                    <h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-yellow-500"><path d="M19 4h-9l-7 15h9l7-15z"/></svg>
+                        الترتيب التنافسي (إجمالي النقاط البيئية)
+                    </h3>
+                    <div class="space-y-3">
+                        ${data.topCompetitors.map((comp, index) => `
+                            <div class="flex items-center justify-between p-3 rounded-lg ${comp.isSelf ? 'bg-indigo-50 border-r-4 border-indigo-500 shadow-inner' : 'bg-slate-50'}">
+                                <div class="flex items-center gap-3">
+                                    <span class="text-xl font-bold w-6 text-center ${comp.isSelf ? 'text-indigo-600' : 'text-slate-500'}">
+                                        #${comp.rank}
+                                    </span>
+                                    <span class="text-sm font-bold ${comp.isSelf ? 'text-indigo-800' : 'text-slate-700'}">
+                                        ${comp.name}
+                                    </span>
+                                </div>
+                                <span class="block text-sm font-bold executive-accent tabular-nums">
+                                    ${comp.points.toLocaleString('ar-SA')} نقطة
+                                </span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+
+                <!-- Quality of Life Index Trend -->
+                <div class="bg-white p-4 rounded-2xl shadow-lg border border-slate-100 mb-6 animate-fadeIn" style="animation-delay: 400ms;">
+                    <h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-indigo-500"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        مؤشر جودة الحياة البيئية (للعملاء)
+                    </h3>
+                    <div class="h-64">
+                        <canvas id="qualityOfLifeChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Impact Breakdown (Doughnut Chart) -->
+                <div class="bg-white p-4 rounded-2xl shadow-lg border border-slate-100 mb-6 animate-fadeIn" style="animation-delay: 500ms;">
+                    <h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-teal-500"><path d="M10 12.5v1.8"/><path d="M10 12.5c-1.3-1.4-2-3.3-2-5.3 0-3.9 3.1-7 7-7 2.1 0 4 .7 5.4 2"/><path d="M10 12.5v1.8c0 1.9-1.2 3.7-3 4.5l-3 1.2V22h14v-2h-2c-1.8 0-3.5-1.2-4.5-3z"/></svg>
+                        توزيع الأثر البيئي حسب الفئة
+                    </h3>
+                    <div class="h-64 flex justify-center items-center">
+                        <canvas id="impactChart"></canvas>
+                    </div>
+                    <div class="text-xs text-slate-500 mt-4 text-center">النسبة المئوية لخفض البصمة الكربونية لكل فئة.</div>
+                </div>
+
+
+                <!-- Initiatives by Region (Chart) -->
+                <div class="bg-white p-4 rounded-2xl shadow-lg border border-slate-100 mb-6 animate-fadeIn" style="animation-delay: 600ms;">
+                    <h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-red-500"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                        توزيع المبادرات حسب المنطقة
+                    </h3>
+                    <div class="h-64">
+                        <canvas id="regionChart"></canvas>
+                    </div>
+                </div>
+
+            </div>
+        `;
+
+
+        // Template for the Smart Suggestion Banner
+        const generateSuggestionBanner = (data) => `
+            <div class="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl p-3 mb-6 flex items-center justify-between text-white shadow-lg shadow-indigo-200 animate-fadeIn" style="animation-delay: 50ms;">
+                <div class="flex items-center gap-3">
+                    <div class="bg-white/20 p-2 rounded-lg">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+                    </div>
+                    <div>
+                        <h3 class="text-xs font-bold text-indigo-100 mb-0.5">اقتراح ذكي لرفع تصنيفك</h3>
+                        <p class="text-[10px]">
+                            ${data === individualData ? 'شارك في حملة التشجير القريبة منك (+50 نقطة)' : 'ابدأ مشروع تركيب الألواح الشمسية الآن (+500 نقطة).'}
+                        </p>
+                    </div>
+                </div>
+                <button class="bg-white/20 hover:bg-white/30 px-3 py-1 rounded-lg text-[10px] font-bold transition-colors">عرض التفاصيل</button>
+            </div>
+        `;
+        
+        // Template for the Achievements Grid (Individual/Business specific data)
+        const generateAchievementsGrid = (data) => `
+            <div class="mb-8">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="${data.accentColor}"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                        لوحة الإنجازات البيئية
+                    </h2>
+                    <button class="text-xs font-bold ${data.accentColor} hover:underline">السجل الكامل</button>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-3">
+                    <!-- Data Point 1 -->
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-all duration-300 transform hover:-translate-y-1 animate-fadeIn" style="animation-delay: 150ms;">
+                        <div class="flex justify-between items-start mb-3">
+                            <div class="p-2.5 rounded-xl bg-green-50 text-green-600">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg>
+                            </div>
+                            <span class="text-[10px] font-bold px-2 py-1 rounded-full bg-slate-100 text-slate-500">سنوي</span>
+                        </div>
+                        <h3 class="text-slate-500 text-xs font-medium mb-1">${data === individualData ? 'المشاركة في المبادرات' : 'المبادرات المؤسسية'}</h3>
+                        <div class="flex items-end gap-2">
+                            <span class="text-xl font-bold text-slate-800">${data === individualData ? '12' : '4'}</span>
+                            <span class="${data.accentColor.replace('text-', 'text-')} text-[10px] mb-1">مبادرة</span>
+                        </div>
+                    </div>
+        
+                    <!-- Data Point 2 -->
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-all duration-300 transform hover:-translate-y-1 animate-fadeIn" style="animation-delay: 250ms;">
+                        <div class="flex justify-between items-start mb-3">
+                            <div class="p-2.5 rounded-xl ${data === individualData ? 'bg-orange-50 text-orange-500' : 'bg-cyan-50 text-cyan-500'}">
+                                ${data === individualData ? 
+                                    `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>`
+                                    :
+                                    `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a7 7 0 0 0-7 7c0 4.19 2.56 8.54 7 12a7 7 0 0 0 7-7 7 7 0 0 0-7-7z"/><path d="M12 4.41V4"/></svg>`
+                                }
+                            </div>
+                            <span class="text-[10px] font-bold px-2 py-1 rounded-full ${data === individualData ? 'bg-orange-100 text-orange-600' : 'bg-blue-100 text-blue-700'}">
+                                ${data === individualData ? 'نشط' : '6 أشهر'}
+                            </span>
+                        </div>
+                        <h3 class="text-slate-500 text-xs font-medium mb-1">${data === individualData ? 'التحديات المنجزة' : 'انخفاض استهلاك المياه'}</h3>
+                        <div class="flex items-end gap-2">
+                            <span class="text-xl font-bold text-slate-800">${data === individualData ? '45' : '25%'}</span>
+                            <span class="${data.accentColor.replace('text-', 'text-')} text-[10px] mb-1">${data === individualData ? 'تحدي' : 'مقارنة بالربع الماضي'}</span>
+                        </div>
+                    </div>
+        
+                    <!-- Data Point 3: Leaderboard (Vertical List) -->
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-all duration-300 transform hover:-translate-y-1 col-span-2 animate-fadeIn" style="animation-delay: 350ms;">
+                        <div class="flex justify-between items-start mb-3">
+                            <div class="p-2.5 rounded-xl bg-yellow-50 text-yellow-500">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                                </svg>
+                            </div>
+                            <span class="text-[10px] font-bold px-2 py-1 rounded-full bg-yellow-100 text-yellow-700">الشهر الحالي</span>
+                        </div>
+                        <h3 class="text-slate-500 text-xs font-medium mb-3">أصحاب الأداء المميز ( أعلى النقاط )!</h3>
+                        <div class="space-y-2 text-sm">
+                            <div class="flex items-center gap-2 border-b border-slate-50 pb-2">
+                                <span class="text-yellow-500 font-bold w-4">#1</span>
+                                <span class="text-2xl" style="line-height: 1;">🥇</span>
+                                <span class="text-slate-800 font-bold flex-1">${data === individualData ? 'محمد علي' : 'سابك'}</span>
+                                <span class="${data.accentColor} font-bold tabular-nums">${data === individualData ? '5.2k' : '15.2k'}</span>
+                            </div>
+                            <div class="flex items-center gap-2 border-b border-slate-50 pb-2">
+                                <span class="text-gray-400 font-bold w-4">#2</span>
+                                <span class="text-2xl" style="line-height: 1;">🥈</span>
+                                <span class="text-slate-600 font-medium flex-1">${data === individualData ? 'سارة عبدالله' : 'أسمنت القصيم'}</span>
+                                <span class="text-slate-500 font-bold tabular-nums">${data === individualData ? '2.8k' : '12.8k'}</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-yellow-700/50 font-bold w-4">#3</span>
+                                <span class="text-2xl" style="line-height: 1;">🥉</span>
+                                <span class="text-slate-600 font-medium flex-1">${data === individualData ? 'نورة خالد' : 'موبايلي'}</span>
+                                <span class="text-slate-500 font-bold tabular-nums">${data === individualData ? '1.5k' : '11.5k'}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Template for the Challenges Slider (Individual/Business specific data)
+        const generateChallengesSlider = (data) => `
+            <div class="mb-8">
+                <h2 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-red-500"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                    التحديات ${data === individualData ? 'النشطة' : 'المؤسسية النشطة'}
+                </h2>
+                
+                <div class="flex overflow-x-auto pb-4 gap-4 -mx-6 px-6 scrollbar-hide">
+                    
+                    <!-- Challenge 1 -->
+                    <div class="min-w-[280px] bg-white p-4 rounded-2xl border border-slate-100 shadow-sm relative overflow-hidden group hover:border-${data === individualData ? 'emerald' : 'blue'}-200 transition-colors cursor-pointer" data-challenge-id="${data === individualData ? '1' : '4'}" data-challenge-name="${data === individualData ? 'حملة التشجير الكبرى' : 'مشروع الطاقة المتجددة (ألواح شمسية)'}" data-challenge-icon="${data === individualData ? '🌳' : '☀️'}">
+                        <div class="absolute top-0 right-0 ${data === individualData ? 'bg-purple-100 text-purple-600' : 'bg-yellow-100 text-yellow-700'} text-[10px] font-bold px-2 py-1 rounded-bl-xl">
+                            ${data === individualData ? 'حدث وطني' : 'استراتيجي'}
+                        </div>
+                        <div class="flex items-start gap-4 mt-2">
+                            <div class="${data === individualData ? 'bg-purple-50 text-2xl' : 'bg-yellow-50'} w-12 h-12 rounded-full flex items-center justify-center text-2xl border ${data === individualData ? 'border-purple-100' : 'border-yellow-100'}">
+                                ${data === individualData ? '🌳' : '☀️'}
+                            </div>
+                            <div class="flex-1">
+                                <h4 class="font-bold text-slate-800 text-sm mb-1">
+                                    ${data === individualData ? 'حملة التشجير الكبرى' : 'مشروع الطاقة المتجددة (ألواح شمسية)'}
+                                </h4>
+                                <p class="text-[10px] text-slate-500 leading-relaxed">
+                                    ${data === individualData ? 'شارك في فعالية التشجير الكبرى في منطقتك يوم الجمعة.' : 'استبدال 50% من استهلاك الكهرباء باستخدام الألواح الشمسية.'}
+                                </p>
+                            </div>
+                        </div>
+                        <div class="mt-4 flex justify-between items-center border-t border-slate-50 pt-3">
+                            <span class="text-xs font-bold ${data.accentColor}">
+                                ${data === individualData ? '+300 نقطة' : '+500 نقطة تأثير'}
+                            </span>
+                            <button class="challenge-button text-xs bg-slate-900 text-white px-4 py-2 rounded-lg hover:bg-slate-700 transition-colors">
+                                ${data === individualData ? 'سجل الآن' : 'ابدأ التنفيذ'}
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Challenge 2 -->
+                    <div class="min-w-[280px] bg-white p-4 rounded-2xl border border-slate-100 shadow-sm relative overflow-hidden group hover:border-${data === individualData ? 'emerald' : 'blue'}-200 transition-colors cursor-pointer" data-challenge-id="${data === individualData ? '2' : '5'}" data-challenge-name="${data === individualData ? 'تحدي إعادة التدوير اليومي' : 'تشجير محيط العمل'}" data-challenge-icon="${data === individualData ? '♻️' : '🌲'}">
+                        <div class="absolute top-0 right-0 ${data === individualData ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-700'} text-[10px] font-bold px-2 py-1 rounded-bl-xl">
+                            ${data === individualData ? 'يومي' : 'حدث داخلي'}
+                        </div>
+                        <div class="flex items-start gap-4 mt-2">
+                            <div class="bg-green-50 w-12 h-12 rounded-full flex items-center justify-center text-2xl border border-green-100">
+                                ${data === individualData ? '♻️' : '🌲'}
+                            </div>
+                            <div class="flex-1">
+                                <h4 class="font-bold text-slate-800 text-sm mb-1">
+                                    ${data === individualData ? 'تحدي إعادة التدوير اليومي' : 'تشجير محيط العمل'}
+                                </h4>
+                                <p class="text-[10px] text-slate-500 leading-relaxed">
+                                    ${data === individualData ? 'قم بفرز المخلفات البلاستيكية اليوم وتوجه لأقرب نقطة تدوير.' : 'تنظيم إيفنت داخلي لزراعة 100 شتلة حول مقر الشركة.'}
+                                </p>
+                            </div>
+                        </div>
+                        <div class="mt-4 flex justify-between items-center border-t border-slate-50 pt-3">
+                            <span class="text-xs font-bold ${data.accentColor}">
+                                ${data === individualData ? '+20 نقطة' : '+150 نقطة تأثير'}
+                            </span>
+                            <button class="challenge-button text-xs bg-slate-900 text-white px-4 py-2 rounded-lg hover:bg-slate-700 transition-colors">
+                                ${data === individualData ? 'إثبات الإنجاز' : 'تحديد موعد'}
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Challenge 3 -->
+                    <div class="min-w-[280px] bg-white p-4 rounded-2xl border border-slate-100 shadow-sm relative overflow-hidden group hover:border-${data === individualData ? 'emerald' : 'blue'}-200 transition-colors cursor-pointer" data-challenge-id="${data === individualData ? '3' : '6'}" data-challenge-name="${data === individualData ? 'فرز المخلفات البلاستيكية' : 'حملة فرز المخلفات الأسبوعية'}" data-challenge-icon="${data === individualData ? '🗑️' : '♻️'}">
+                        <div class="absolute top-0 right-0 bg-teal-100 text-teal-700 text-[10px] font-bold px-2 py-1 rounded-bl-xl">
+                            ${data === individualData ? 'شهري' : 'أسبوعي'}
+                        </div>
+                        <div class="flex items-start gap-4 mt-2">
+                            <div class="bg-teal-50 w-12 h-12 rounded-full flex items-center justify-center text-2xl border border-teal-100">
+                                ${data === individualData ? '🗑️' : '♻️'}
+                            </div> 
+                            <div class="flex-1">
+                                <h4 class="font-bold text-slate-800 text-sm mb-1">
+                                    ${data === individualData ? 'فرز المخلفات البلاستيكية' : 'حملة فرز المخلفات الأسبوعية'}
+                                </h4>
+                                <p class="text-[10px] text-slate-500 leading-relaxed">
+                                    ${data === individualData ? 'ساهم بجمع وتدوير ما لا يقل عن 2 كجم من المخلفات البلاستيكية هذا الشهر.' : 'تحقيق نسبة فرز تدويري للبلاستيك والورق لا تقل عن 80% أسبوعياً.'}
+                                </p>
+                            </div>
+                        </div>
+                        <div class="mt-4 flex justify-between items-center border-t border-slate-50 pt-3">
+                            <span class="text-xs font-bold ${data.accentColor}">
+                                ${data === individualData ? '+250 نقطة' : '+50 نقطة أسبوعياً'}
+                            </span>
+                            <button class="challenge-button text-xs bg-slate-900 text-white px-4 py-2 rounded-lg hover:bg-slate-700 transition-colors">
+                                ${data === individualData ? 'انضمام' : 'متابعة الأداء'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Template for the Rewards/Incentives Banner (Footer)
+        const generateRewardsBanner = (data) => `
+            <div id="rewards-banner" class="relative rounded-xl overflow-hidden bg-slate-900 text-white p-4 shadow-lg mb-8 group cursor-pointer animate-fadeIn" style="animation-delay: 450ms;">
+                <div class="absolute inset-0 w-full h-full bg-[url('https://placehold.co/400x200/${data === individualData ? 'Rewards+Shop' : 'Corporate+Awards'}')] bg-cover bg-center opacity-30 mix-blend-overlay transition-transform duration-700 group-hover:scale-105"></div>
+                <div class="absolute inset-0 bg-gradient-to-r from-yellow-700/80 to-transparent"></div>
+                
+                <div class="relative z-10 flex justify-between items-center">
+                    <div>
+                        <span class="bg-yellow-500/20 text-yellow-300 text-[9px] font-bold px-1.5 py-0.5 rounded border border-yellow-500/30 mb-1 inline-block">
+                            ${data === individualData ? 'مكافآت حصرية' : 'تكريم المؤسسات'}
+                        </span>
+                        <h3 class="text-sm font-bold mb-0.5">
+                            ${data === individualData ? 'متجر استبدال النقاط' : 'برنامج الحوافز والتكريم'}
+                        </h3>
+                        <p class="text-slate-200 text-[10px] max-w-[220px] leading-snug">
+                            ${data === individualData ? 'اضغط هنا لاستبدال نقاطك البيئية بخصومات ومزايا حكومية.' : 'استبدل نقاط التأثير بمزايا حكومية، شهادات اعتماد، أو دعم مشاريع.'}
+                        </p>
+                    </div>
+                    <!-- Shopping Bag Icon (Yellow) -->
+                    <div class="bg-white/10 backdrop-blur-md p-2 rounded-full border border-white/20 text-yellow-300">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4H6z"/>
+                            <path d="M3 6h18"/>
+                            <path d="M16 10a4 4 0 0 1-8 0"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Template for the Initiatives/Compliance Banner (Footer)
+        const generateInitiativesBanner = (data) => `
+            <!-- Added ID for click listener -->
+            <div id="initiatives-banner" class="relative rounded-2xl overflow-hidden bg-slate-900 text-white p-5 shadow-lg mb-8 group cursor-pointer">
+                <div class="absolute inset-0 w-full h-full bg-[url('https://placehold.co/400x200/${data === individualData ? '065f46' : '1e3a8a'}/ffffff?text=${data === individualData ? 'Saudi+Green+Initiative' : 'Green+Economy'}')] bg-cover bg-center opacity-40 mix-blend-overlay transition-transform duration-700 group-hover:scale-105"></div>
+                <div class="absolute inset-0 bg-gradient-to-r from-${data === individualData ? 'emerald-900/90' : 'blue-900/90'} to-transparent"></div>
+
+                <div class="relative z-10 flex justify-between items-center">
+                    <div>
+                        <span class="bg-${data === individualData ? 'emerald' : 'blue'}-500/20 text-${data === individualData ? 'emerald' : 'blue'}-300 text-[10px] font-bold px-2 py-0.5 rounded border border-${data === individualData ? 'emerald' : 'blue'}-500/30 mb-2 inline-block">
+                            ${data === individualData ? 'مبادرة وطنية' : 'لائحة الالتزام'}
+                        </span>
+                        <h3 class="text-lg font-bold mb-1">
+                            ${data === individualData ? 'دليل المبادرات البيئية' : 'معايير التصنيف البيئي'}
+                        </h3>
+                        <p class="text-slate-300 text-xs max-w-[220px] leading-relaxed">
+                            ${data === individualData ? 'تصفح كافة الحملات الوطنية (تشجير، نظافة، توعية) وسجل مشاركتك.' : 'اطلع على دليل الالتزامات البيئية للشركات وكيفية رفع التصنيف.'}
+                        </p>
+                    </div>
+                    <div class="bg-white/10 backdrop-blur-md p-3 rounded-full border border-white/20">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+
+        // --- CHART FUNCTIONS ---
+        function createQualityOfLifeChart() {
+            const ctx = document.getElementById('qualityOfLifeChart');
+            if (!ctx) return;
+            
+            qualityOfLifeChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['الربع الأول', 'الربع الثاني', 'الربع الثالث', 'الربع الرابع'],
+                    datasets: [{
+                        label: 'المؤشر',
+                        data: [75, 78, 85, 92],
+                        borderColor: '#4f46e5', // Indigo-600
+                        backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                        fill: true,
+                        tension: 0.3,
+                        pointRadius: 5,
+                        pointHoverRadius: 7,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            rtl: true,
+                            bodyFont: { family: 'Cairo' },
+                            titleFont: { family: 'Cairo' },
+                            callbacks: {
+                                label: (context) => `القيمة: ${context.raw}`
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            ticks: { font: { family: 'Cairo' } }
+                        },
+                        y: {
+                            min: 60,
+                            max: 100,
+                            ticks: { font: { family: 'Cairo' } }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createImpactChart(impactData) {
+            const ctx = document.getElementById('impactChart');
+            if (!ctx) return;
+            
+            const labels = impactData.map(d => d.category);
+            const dataValues = impactData.map(d => d.value);
+
+            impactChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: dataValues,
+                        backgroundColor: [
+                            '#06b6d4', // Cyan-500
+                            '#10b981', // Emerald-500
+                            '#3b82f6', // Blue-500
+                            '#f59e0b', // Amber-500
+                        ],
+                        hoverOffset: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            rtl: true,
+                            labels: {
+                                usePointStyle: true,
+                                font: { family: 'Cairo' }
+                            }
+                        },
+                        tooltip: {
+                            rtl: true,
+                            bodyFont: { family: 'Cairo' },
+                            titleFont: { family: 'Cairo' },
+                            callbacks: {
+                                label: (context) => `${context.label}: ${context.raw}%`
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        
+        /** Creates the Chart.js visualization for Regional Initiatives (Bar Chart) */
+        function createRegionChart(regions) {
+            const ctx = document.getElementById('regionChart');
+            if (!ctx) return;
+            
+            regionChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: regions.map(r => r.name),
+                    datasets: [{
+                        label: 'عدد المبادرات',
+                        data: regions.map(r => r.initiatives),
+                        backgroundColor: [
+                            '#06b6d4', // Cyan-500
+                            '#3b82f6', // Blue-500
+                            '#10b981', // Emerald-500
+                        ],
+                        borderRadius: 6,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y', // Horizontal bars
+                    plugins: {
+                        legend: {
+                            display: false,
+                        },
+                        title: {
+                            display: false,
+                        },
+                        tooltip: {
+                            rtl: true,
+                            bodyFont: { family: 'Cairo' },
+                            titleFont: { family: 'Cairo' },
+                        }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            grid: { display: false },
+                            ticks: { font: { family: 'Cairo' } }
+                        },
+                        y: {
+                            grid: { display: false },
+                            ticks: { font: { family: 'Cairo' } }
+                        }
+                    }
+                }
+            });
+        }
+        
+        /** Updates the QR Code modal content based on the current data */
+        function updateModalData(data) {
+            // Only update QR modal info if we are not in the executive dashboard mode
+            if (currentMode === 'individuals' || currentMode === 'business') {
+                const qrUserInfo = document.getElementById('qr-user-info');
+                if (qrUserInfo) {
+                    qrUserInfo.textContent = `${data.name} | ${data.rank}`;
+                }
+                
+                const qrDisplay = document.getElementById('qr-code-display');
+                if (qrDisplay) {
+                    // Ensure correct classes are set before attempting to remove/add them
+                    qrDisplay.className = qrDisplay.className.replace(/border-(emerald|blue)-500/g, '');
+                    qrDisplay.classList.add(data.qrCodeBorder);
+                    qrDisplay.querySelector('img').src = data.qrPlaceholder;
+                }
+
+                // Update Rewards Modal content
+                if (modalUserPoints) {
+                    modalUserPoints.textContent = data.points;
+                }
+
+                if (currentMode === 'individuals') {
+                    updateRedeemButtons(data.points);
+                }
+                
+                // Update Enrollment Modal Enrollee Data
+                const enrolleeName = document.getElementById('enrollee-name');
+                const enrolleeId = document.getElementById('enrollee-id');
+                
+                if (enrolleeName) enrolleeName.textContent = data.name;
+                if (enrolleeId) enrolleeId.textContent = data.id;
+            }
+        }
+
+        /** Updates the header/background visual style */
+        function updateVisuals(data) {
+            const isExecutive = currentMode === 'executives';
+            const accent = isExecutive ? executiveData.accentColor : data.accentColor;
+            const titleColor = isExecutive ? executiveData.titleColor : data.titleColor;
+            
+            // Define classes to remove globally (all possible gradient classes)
+            const ALL_GRADIENT_CLASSES = [
+                'bg-gradient-to-b',
+                'from-emerald-900', 'to-emerald-800', // Individual
+                'from-indigo-900', 'to-blue-900',     // Business
+                'executive-bg'                        // Executive
+            ];
+
+
+            // 1. Update Header Title
+            modeText.textContent = isExecutive ? 'داش بورد صناع القرار' : (currentMode === 'individuals' ? 'أفراد' : 'أعمال');
+            modeText.classList.remove('text-emerald-300', 'text-blue-300', 'executive-text-title');
+            modeText.classList.add(titleColor.replace('text-', 'text-'));
+
+            // 2. Update Hero Background
+            // Remove ALL previous gradient classes
+            heroBackground.classList.remove(...ALL_GRADIENT_CLASSES);
+            // Add current gradient classes (using spread syntax for multiple classes)
+            heroBackground.classList.add(...data.gradientClasses);
+
+
+            // 3. Update Switcher Buttons Visibility (Logic remains the same)
+            // Show all buttons needed for all modes
+            if (switchExecutives) switchExecutives.classList.remove('hidden');
+            
+            if (currentMode === 'individuals') {
+                if(switchIndividuals) switchIndividuals.classList.add('bg-white', 'shadow-md', 'text-slate-800');
+                if(switchIndividuals) switchIndividuals.classList.remove('text-slate-600', 'hover:bg-slate-300');
+                if(switchBusiness) switchBusiness.classList.remove('bg-white', 'shadow-md', 'text-slate-800');
+                if(switchBusiness) switchBusiness.classList.add('text-slate-600', 'hover:bg-slate-300');
+                if(switchExecutives) switchExecutives.classList.remove('bg-white', 'shadow-md', 'text-slate-800');
+                if(switchExecutives) switchExecutives.classList.add('text-slate-600', 'hover:bg-slate-300');
+            } else if (currentMode === 'business') {
+                if(switchBusiness) switchBusiness.classList.add('bg-white', 'shadow-md', 'text-slate-800');
+                if(switchBusiness) switchBusiness.classList.remove('text-slate-600', 'hover:bg-slate-300');
+                if(switchIndividuals) switchIndividuals.classList.remove('bg-white', 'shadow-md', 'text-slate-800');
+                if(switchIndividuals) switchIndividuals.classList.add('text-slate-600', 'hover:bg-slate-300');
+                if(switchExecutives) switchExecutives.classList.remove('bg-white', 'shadow-md', 'text-slate-800');
+                if(switchExecutives) switchExecutives.classList.add('text-slate-600', 'hover:bg-slate-300');
+            } else if (currentMode === 'executives') {
+                 if(switchExecutives) switchExecutives.classList.add('bg-white', 'shadow-md', 'text-slate-800');
+                 if(switchExecutives) switchExecutives.classList.remove('text-slate-600', 'hover:bg-slate-300');
+                 if(switchIndividuals) switchIndividuals.classList.remove('bg-white', 'shadow-md', 'text-slate-800');
+                 if(switchIndividuals) switchIndividuals.classList.add('text-slate-600', 'hover:bg-slate-300');
+                 if(switchBusiness) switchBusiness.classList.remove('bg-white', 'shadow-md', 'text-slate-800');
+                 if(switchBusiness) switchBusiness.classList.add('text-slate-600', 'hover:bg-slate-300');
+            }
+
+            // 4. Also update AI button color if header is at the top
+            const scrollY = window.scrollY;
+            const aiBtn = document.getElementById('ai-btn');
+
+            if (scrollY < 50) {
+                // Top State
+                aiBtn.classList.remove('bg-slate-100', 'text-slate-800', 'hover:bg-slate-200');
+                if (currentMode === 'individuals') {
+                    aiBtn.classList.add('bg-emerald-500/80', 'text-white');
+                } else if (currentMode === 'business') {
+                    aiBtn.classList.add('bg-blue-500/80', 'text-white');
+                } else if (currentMode === 'executives') {
+                     aiBtn.classList.add('bg-cyan-600/80', 'text-white');
+                }
+            } else {
+                 // Scrolled State
+                aiBtn.classList.remove('bg-emerald-500/80', 'bg-blue-500/80', 'bg-cyan-600/80', 'text-white');
+                aiBtn.classList.add('bg-slate-100', 'text-slate-800');
+            }
+        }
+
+        /** Renders the entire dashboard content based on the current mode */
+        function renderDashboard(mode) {
+            // Clear any existing chart instance
+            if (regionChart) { regionChart.destroy(); regionChart = null; }
+            if (impactChart) { impactChart.destroy(); impactChart = null; }
+            if (qualityOfLifeChart) { qualityOfLifeChart.destroy(); qualityOfLifeChart = null; }
+
+
+            let data;
+            let html = '';
+            
+            if (mode === 'executives') {
+                data = executiveData;
+                html = generateExecutiveDashboard(data);
+                
+            } else {
+                data = mode === 'individuals' ? individualData : businessData;
+                html += generateEcoCard(data);
+                html += generateProgressBar(data);
+                html += generateSuggestionBanner(data);
+                html += generateAchievementsGrid(data);
+                html += generateChallengesSlider(data);
+                html += generateRewardsBanner(data);
+                html += generateInitiativesBanner(data);
+            }
+            
+            // 2. Inject into the DOM
+            dashboardContent.innerHTML = html;
+            
+            // 3. Post-render logic (Charts and Modals)
+            if (mode === 'executives') {
+                setTimeout(() => {
+                    createQualityOfLifeChart();
+                    createImpactChart(data.impactBreakdown);
+                    createRegionChart(data.regions);
+                }, 100); // Wait for DOM to update
+            } else {
+                updateModalData(data);
+            }
+            
+            // 4. Re-attach event listeners after DOM update (only needed for non-executive dashboards)
+            if (mode !== 'executives') {
+                attachEventListeners();
+            }
+        }
+        
+        /** Attaches all dynamic event listeners (called after DOM rendering) */
+        function attachEventListeners() {
+            // 1. Eco Card Click -> Open QR Modal
+            const ecoCard = document.getElementById('eco-card');
+            if (ecoCard) {
+                ecoCard.onclick = () => {
+                    const data = currentMode === 'individuals' ? individualData : businessData;
+                    const qrDisplay = document.getElementById('qr-code-display');
+                    if (qrDisplay) {
+                        qrDisplay.classList.remove('border-emerald-500', 'border-blue-500');
+                        qrDisplay.classList.add(data.qrCodeBorder);
+                    }
+                    if(qrModal && document.getElementById('qr-modal-content')) {
+                        openModal(qrModal, document.getElementById('qr-modal-content'));
+                    }
+                };
+            }
+            
+            // 2. Rewards Banner Click -> Open Rewards Modal (Only for Individuals)
+            const rewardsBanner = document.getElementById('rewards-banner');
+            if (rewardsBanner) {
+                rewardsBanner.onclick = () => {
+                    if (currentMode === 'individuals' && rewardsModal && rewardsModalContent) {
+                        updateRedeemButtons(userPoints);
+                        openModal(rewardsModal, rewardsModalContent);
+                    } else {
+                        showMessage('يتم توجيهك إلى صفحة تفاصيل حوافز المؤسسات...');
+                    }
+                };
+            }
+
+            // 3. Initiatives Banner Click -> Open Initiatives Modal
+            const initiativesBanner = document.getElementById('initiatives-banner');
+            if (initiativesBanner) {
+                initiativesBanner.onclick = () => {
+                    if(initiativesModal && initiativesModalContent) {
+                        openModal(initiativesModal, initiativesModalContent);
+                    }
+                };
+            }
+            
+            // 4. Handle Redeem Button Clicks (Only for Individuals Mode)
+            const redeemButtons = document.querySelectorAll('#rewards-list .redeem-btn');
+            redeemButtons.forEach(button => {
+                button.onclick = (e) => {
+                    const requiredPoints = parseInt(e.currentTarget.getAttribute('data-points'));
+                    const rewardTitleElement = e.currentTarget.closest('.reward-card').querySelector('h4');
+                    const rewardTitle = rewardTitleElement ? rewardTitleElement.textContent : 'مكافأة غير معروفة';
+                    
+                    if (currentMode === 'individuals' && userPoints >= requiredPoints) {
+                        userPoints -= requiredPoints;
+                        
+                        const userPointsElement = document.getElementById('user-points');
+                        if (userPointsElement) {
+                           userPointsElement.textContent = userPoints;
+                        }
+                        
+                        updateRedeemButtons(userPoints);
+                        showMessage(`تم استبدال ${requiredPoints} نقطة بنجاح! تم تطبيق مكافأة "${rewardTitle}".`, 5000);
+                    } else if (currentMode === 'individuals') {
+                        showMessage('لا تمتلك نقاط كافية لاستبدال هذه المكافأة.', 3000);
+                    }
+                };
+            });
+            
+            // 5. Challenge Card Button Click -> Open Enrollment Modal
+            const challengeButtons = document.querySelectorAll('.challenge-button');
+            challengeButtons.forEach(button => {
+                button.onclick = (e) => {
+                    e.stopPropagation(); 
+                    // Use closest to find the challenge container, which holds the data attributes
+                    const card = e.currentTarget.closest('.min-w-\\[280px\\]');
+                    
+                    if (!card) {
+                        showMessage('حدث خطأ في تحديد التحدي.', 3000);
+                        return;
+                    }
+
+                    // Retrieve data attributes
+                    const challengeName = card.getAttribute('data-challenge-name');
+                    const challengeIcon = card.getAttribute('data-challenge-icon');
+                    const data = currentMode === 'individuals' ? individualData : businessData;
+                    
+                    // --- 5a. Populate Initiative Selector ---
+                    if (initiativeSelector) { 
+                        const relevantChallengesData = data.challenges.map(id => initiativesList[id]);
+
+                        initiativeSelector.innerHTML = relevantChallengesData.map(item => 
+                            `<option value="${item.name}" data-location="${item.location}" data-points="${item.points}">
+                                ${item.name} (${item.points})
+                            </option>`
+                        ).join('');
+
+                        // Select the option that matches the clicked challenge
+                        if (initiativeSelector.options.length > 0) {
+                            const options = Array.from(initiativeSelector.options);
+                            const matchingOption = options.find(opt => opt.value === challengeName) || options[0];
+                            initiativeSelector.value = matchingOption.value;
+                        }
+                    }
+
+                    // --- 5b. Reset & Populate Enrollment Modal Elements ---
+                    
+                    // Reset modal state elements (with checks)
+                    if (barcodeInput) barcodeInput.classList.add('hidden');
+                    if (scanBarcodeBtn) {
+                        scanBarcodeBtn.classList.add('hidden');
+                        scanBarcodeBtn.disabled = true;
+                    }
+                    if (enrollmentActivationBtn) {
+                        enrollmentActivationBtn.classList.remove('hidden');
+                        enrollmentActivationBtn.disabled = false;
+                    }
+                    
+                    const locationStatus = document.getElementById('location-status');
+                    if (locationStatus) {
+                        locationStatus.textContent = 'يجب تفعيل هذا الزر عند الوصول لموقع المبادرة.';
+                        locationStatus.classList.remove('text-green-500');
+                        locationStatus.classList.add('text-red-500');
+                    }
+
+                    // Set default selected challenge display and map (with checks)
+                    const enrollmentChallengeName = document.getElementById('enrollment-challenge-name');
+                    const enrollmentIcon = document.getElementById('enrollment-icon');
+
+                    if (enrollmentChallengeName) enrollmentChallengeName.textContent = challengeName;
+                    if (enrollmentIcon) enrollmentIcon.textContent = challengeIcon;
+                    
+                    // Trigger map update based on initial selection (after populating selector)
+                    if (initiativeSelector && initiativeSelector.value) {
+                         updateMapAndDisplayLocation(initiativeSelector.value);
+                    }
+
+                    // Finally, open the modal
+                    if(enrollmentModal && enrollmentModalContent) {
+                        openModal(enrollmentModal, enrollmentModalContent);
+                    }
+                };
+            });
+            
+            // 6. Notifications Button Click -> Open Notifications Modal (NEW)
+            const bellBtn = document.getElementById('bell-btn');
+            if (bellBtn) {
+                bellBtn.onclick = () => {
+                    if(notificationsModal && notificationsModalContent) {
+                        openModal(notificationsModal, notificationsModalContent);
+                    }
+                };
+            }
+            
+            // 7. Initiative Selector Change Listener (NEW)
+            if (initiativeSelector) {
+                initiativeSelector.onchange = (e) => {
+                    updateMapAndDisplayLocation(e.target.value);
+                };
+            }
+
+
+            // 8. Unified Enrollment Activation Logic (Geolocation Simulation)
+            if (enrollmentActivationBtn) {
+                enrollmentActivationBtn.onclick = () => {
+                    if (!initiativeSelector || !initiativeSelector.options.length) {
+                         showMessage('الرجاء اختيار مبادرة أولاً.', 3300);
+                         return;
+                    }
+                    const selectedOption = initiativeSelector.options[initiativeSelector.selectedIndex];
+                    const location = selectedOption.getAttribute('data-location');
+                    
+                    const locationStatus = document.getElementById('location-status');
+                    if (locationStatus) {
+                       locationStatus.textContent = `جاري محاكاة التحقق من القرب من: ${location}...`;
+                    }
+
+                    if(enrollmentActivationBtn) enrollmentActivationBtn.disabled = true;
+                    
+                    // Simulate Geolocation success (within 2 seconds)
+                    setTimeout(() => {
+                        if (locationStatus) {
+                            locationStatus.textContent = '✅ تم التحقق بنجاح! أنت ضمن نطاق المبادرة.';
+                            locationStatus.classList.remove('text-red-500');
+                            locationStatus.classList.add('text-green-500');
+                        }
+                        
+                        // Hide Activation Button and show Barcode Scanner
+                        if (enrollmentActivationBtn) enrollmentActivationBtn.classList.add('hidden');
+                        if (barcodeInput) barcodeInput.classList.remove('hidden');
+                        if (scanBarcodeBtn) scanBarcodeBtn.classList.remove('hidden');
+                        
+                        // Enable Barcode Scan (simulating automatic barcode generation/display on site)
+                        if (barcodeInput) barcodeInput.value = 'SCAN-CODE-' + Math.floor(Math.random() * 9000 + 1000);
+                        if (scanBarcodeBtn) scanBarcodeBtn.disabled = false;
+                        
+                        showMessage('تم تفعيل رمز الباركود التلقائي! يرجى تأكيد الرمز في الموقع.', 5000);
+
+                    }, 2000);
+                };
+            }
+            
+            // 9. Barcode Scan/Submit Logic
+            if (scanBarcodeBtn) {
+                scanBarcodeBtn.onclick = () => {
+                    if (!barcodeInput || !initiativeSelector || !enrollmentModalContent) return;
+
+                    const barcode = barcodeInput.value.trim();
+                    const selectedOption = initiativeSelector.options[initiativeSelector.selectedIndex];
+                    const points = selectedOption.getAttribute('data-points');
+                    const name = selectedOption.value;
+
+                    if (barcode && barcode.startsWith('SCAN-CODE-')) {
+                        showMessage(`جاري التحقق من الرمز ${barcode}...`);
+                        setTimeout(() => {
+                            closeModal(enrollmentModal, enrollmentModalContent);
+                            // Update User Points state (for individuals)
+                            if (currentMode === 'individuals') {
+                                const pointsValue = parseInt(points.match(/\d+/)[0]); // Extract number from '+300 نقطة'
+                                userPoints += pointsValue;
+                                
+                                const userPointsElement = document.getElementById('user-points');
+                                if (userPointsElement) {
+                                    userPointsElement.textContent = userPoints;
+                                }
+                            }
+                            
+                            addNotification(
+                                'تم الإنجاز بنجاح! 🏆',
+                                `تم تأكيد مشاركتك في ${name}. أُضيفت النقاط إلى رصيدك.`, 
+                                'blue'
+                            );
+                            showMessage(`تهنئة! تم تأكيد إنجاز ${name}.`, 5000);
+                            const bellBtn = document.getElementById('bell-btn');
+                            if(bellBtn) bellBtn.classList.add('animate-pulse-soft');
+
+                        }, 1500);
+                    } else {
+                        showMessage('الرمز غير صحيح أو لم يتم تفعيله بعد.', 3000);
+                    }
+                };
+            }
+        }
+        
+
+        // --- HANDLERS (STATIC LISTENERS) ---
+        
+        // 1. Mode Switcher Clicks
+        switchIndividuals.addEventListener('click', () => switchMode('individuals'));
+        switchBusiness.addEventListener('click', () => switchMode('business'));
+        switchExecutives.addEventListener('click', () => switchMode('executives'));
+
+        // 2. Modal Closing Handlers
+        closeQrModalBtn.addEventListener('click', () => closeModal(qrModal, document.getElementById('qr-modal-content')));
+        qrModal.addEventListener('click', (e) => { if (e.target === qrModal) closeModal(qrModal, document.getElementById('qr-modal-content')); });
+        
+        closeRewardsModalBtn.addEventListener('click', () => closeModal(rewardsModal, rewardsModalContent));
+        rewardsModal.addEventListener('click', (e) => { if (e.target === rewardsModal) closeModal(rewardsModal, rewardsModalContent); });
+        
+        closeInitiativesModalBtn.addEventListener('click', () => closeModal(initiativesModal, initiativesModalContent));
+        initiativesModal.addEventListener('click', (e) => { if (e.target === initiativesModal) closeModal(initiativesModal, initiativesModalContent); });
+
+        closeEnrollmentModalBtn.addEventListener('click', () => closeModal(enrollmentModal, enrollmentModalContent));
+        enrollmentModal.addEventListener('click', (e) => { if (e.target === enrollmentModal) closeModal(enrollmentModal, enrollmentModalContent); });
+        
+        closeNotificationsModalBtn.addEventListener('click', () => {
+            closeModal(notificationsModal, notificationsModalContent);
+            document.getElementById('bell-btn').classList.remove('animate-pulse-soft');
+        });
+        notificationsModal.addEventListener('click', (e) => { if (e.target === notificationsModal) { 
+            closeModal(notificationsModal, notificationsModalContent);
+            document.getElementById('bell-btn').classList.remove('animate-pulse-soft'); 
+        }});
+        
+        window.addEventListener('scroll', () => {
+            const scrollY = window.scrollY;
+            const data = currentMode === 'individuals' ? individualData : (currentMode === 'business' ? businessData : executiveData);
+            const isExecutive = currentMode === 'executives';
+            const aiBtn = document.getElementById('ai-btn');
+            
+            // Header Styles
+            if (scrollY > 50) {
+                // Scrolled State
+                header.classList.add('bg-white', 'py-3', 'shadow-md', 'border-b', 'border-slate-100');
+                header.classList.remove('bg-transparent', 'py-5');
+                modeText.classList.remove(data.titleColor, 'executive-text-title');
+                modeText.classList.add('text-slate-800');
+                
+                document.getElementById('menu-btn').classList.remove('bg-white/20', 'text-white');
+                document.getElementById('menu-btn').classList.add('bg-slate-100', 'text-slate-800');
+                document.getElementById('bell-btn').classList.remove('bg-white/20', 'text-white', 'hover:bg-white/30');
+                document.getElementById('bell-btn').classList.add('bg-slate-100', 'text-slate-800', 'hover:bg-slate-200');
+                
+                // AI Button (Neutral/Scrolled)
+                aiBtn.classList.remove('bg-emerald-500/80', 'bg-blue-500/80', 'bg-cyan-600/80', 'text-white');
+                aiBtn.classList.add('bg-slate-100', 'text-slate-800');
+                
+                // Show Mode Switcher
+                modeSwitcher.classList.remove('hidden');
+            } else {
+                // Top State
+                header.classList.remove('bg-white', 'py-3', 'shadow-md', 'border-b', 'border-slate-100');
+                header.classList.add('bg-transparent', 'py-5');
+                modeText.classList.remove('text-slate-800');
+                modeText.classList.add(isExecutive ? executiveData.titleColor : data.titleColor);
+                
+                document.getElementById('menu-btn').classList.remove('bg-slate-100', 'text-slate-800');
+                document.getElementById('menu-btn').classList.add('bg-white/20', 'text-white');
+                document.getElementById('bell-btn').classList.remove('bg-slate-100', 'text-slate-800', 'hover:bg-slate-200');
+                document.getElementById('bell-btn').classList.add('bg-white/20', 'text-white', 'hover:bg-white/30');
+                
+                // AI Button (Colored/Top)
+                aiBtn.classList.remove('bg-slate-100', 'text-slate-800');
+                if (currentMode === 'individuals') {
+                    aiBtn.classList.add('bg-emerald-500/80', 'text-white');
+                } else if (currentMode === 'business') {
+                    aiBtn.classList.add('bg-blue-500/80', 'text-white');
+                } else if (currentMode === 'executives') {
+                     aiBtn.classList.add('bg-cyan-600/80', 'text-white');
+                }
+                
+
+                // Hide Mode Switcher
+                modeSwitcher.classList.add('hidden');
+            }
+        });
+
+
+        // --- INITIALIZATION ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // Set initial content and visuals
+            updateVisuals(individualData);
+            renderDashboard(currentMode);
+            
+            // NEW: Initial Geo-fence check and notification simulation on load
+            checkGeoFenceAndNotify();
+        });
+
+    </script>
+</body>
+</html>
