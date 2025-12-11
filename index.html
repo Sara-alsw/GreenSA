@@ -75,6 +75,10 @@
                 </h1>
             </div>
             <div class="flex items-center gap-3">
+                <!-- NEW QR Code Button for explicit Eco ID display -->
+                <div id="qr-header-btn" class="p-2 rounded-full transition-colors backdrop-blur-md cursor-pointer hover:scale-105">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="8" x="2" y="2" rx="1"/><rect width="8" height="8" x="14" y="2" rx="1"/><rect width="8" height="8" x="2" y="14" rx="1"/><path d="M16 8h2a2 2 0 0 1 2 2v2M16 16h2a2 2 0 0 0 2-2v-2"/></svg>
+                </div>
                 <!-- Removed animate-pulse-soft class from here -->
                 <div id="ai-btn" class="p-2 rounded-full transition-colors backdrop-blur-md cursor-pointer hover:scale-105">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
@@ -168,7 +172,7 @@
                         تهدف إلى زراعة 10 مليارات شجرة في المملكة. تتضمن فعاليات موسمية للمشاركة المجتمعية والمؤسسية.
                     </p>
                     <div class="text-right">
-                        <span class="text-xs font-bold text-emerald-600">الأثر المتوقع: خفض 200 طن $\text{CO}_2$ مؤسسياً.</span>
+                        <span class="text-xs font-bold text-emerald-600">الأثر المتوقع: خفض 200 طن  مؤسسياً.</span>
                     </div>
                 </div>
                 
@@ -178,10 +182,10 @@
                         برنامج كفاءة الطاقة للمنشآت
                     </h4>
                     <p class="text-xs text-slate-600 leading-relaxed mb-2">
-                        يتضمن معايير لترشيد استهلاك الكهرباء والمياه في المباني التجارية والصناعية لرفع التصنيف البيئي.
+                        يتضمن معايير لترشيد استهلاك الكهرباء والمياه في المباني التجارية والصناعية   .
                     </p>
                     <div class="text-right">
-                        <span class="text-xs font-bold text-blue-600">الأثر المتوقع: نقاط تأثير شهرية بناءً على نسبة الخفض.</span>
+                        <span class="text-xs font-bold text-blue-600">الأثر المتوقع: تقليل الضغط على مصادر المياه العذبة ، مما يضمن استدامتها للأجيال القادم.</span>
                     </div>
                 </div>
                 
@@ -191,7 +195,7 @@
                         حملات التدوير الإلكتروني (جمع النفايات الخطرة)
                     </h4>
                     <p class="text-xs text-slate-600 leading-relaxed mb-2">
-                        تتيح للأفراد والشركات تسليم النفايات الإلكترونية والبطاريات لمراكز معتمدة للحصول على نقاط.
+                        تتيح للأفراد والشركات تسليم النفايات الإلكترونية والبطاريات لمراكز معتمدة   .
                     </p>
                     <div class="text-right">
                         <span class="text-xs font-bold text-teal-600">الأثر المتوقع: نقاط فردية لكل كيلوجرام يتم تسليمه.</span>
@@ -395,8 +399,8 @@
     <script>
         // --- DATA & STATE ---
         let currentMode = 'individuals';
-        let userPoints = 78; // Individual's points
-        let businessPoints = 855; // Company's points (Your company: Al-Rawad)
+        let userPoints = 4100; // Individual's points
+        let businessPoints = 13500; // Company's points (Your company: Al-Rawad)
 
         // Simulated initiative list (Shared between individuals/business)
         const initiativesList = {
@@ -420,7 +424,7 @@
             name: 'محمد سعود',
             id: '10******89',
             progressText: 'التقدم للمستوى الأخضر',
-            pointsRemaining: '12 نقطة متبقية',
+            pointsRemaining: '900 نقطة متبقية',
             progressWidth: 'w-[88%]', // 88% complete (78 points to 90 goal)
             heroBgClasses: 'from-emerald-900 via-emerald-800 to-teal-900',
             qrCodeBorder: 'border-emerald-500',
@@ -440,7 +444,7 @@
             name: 'شركة الرواد القابضة',
             id: 'C.R. 51******22',
             progressText: 'التقدم للمستوى الذهبي',
-            pointsRemaining: '145 نقطة متبقية',
+            pointsRemaining: '1500 نقطة متبقية',
             progressWidth: 'w-[78%]', // 78% complete (855 points to 1000 goal)
             heroBgClasses: 'from-indigo-900 via-indigo-800 to-cyan-900',
             qrCodeBorder: 'border-blue-500',
@@ -462,16 +466,17 @@
             ],
             impactBreakdown: [
                 { category: 'الطاقة المتجددة', value: 45 },
-                { category: 'خفض المياه', value: 30 },
+                { category: 'خفض المياه', value: 10
+                 },
                 { category: 'إدارة النفايات', value: 15 },
-                { category: 'النقل المستدام', value: 10 },
+                { category: 'التشجير ', value: 30 },
             ],
             topCompetitors: [
-                { name: 'الرواد القابضة', points: 855000, rank: 1, isSelf: true },
-                { name: 'شركة التقدم الصناعي', points: 790000, rank: 2, isSelf: false },
-                { name: 'مجموعة الموارد الخضراء', points: 750000, rank: 3, isSelf: false },
-                { name: 'مؤسسة إعمار المستقبل', points: 610000, rank: 4, isSelf: false },
-                { name: 'شركة السهل للخدمات', points: 580000, rank: 5, isSelf: false },
+                { name: 'علم', points: 50200, rank: 1, isSelf: true },
+                { name: 'سدايا', points: 44800, rank: 2, isSelf: false },
+                { name: 'سابك', points: 30500, rank: 3, isSelf: false },
+                { name: 'أسمنت القصيم', points: 30200, rank: 4, isSelf: false },
+                { name: 'موبايلي', points: 20980, rank: 5, isSelf: false },
             ],
             gradientClasses: ['executive-bg']
         };
@@ -487,6 +492,8 @@
         const modeSwitcher = document.getElementById('mode-switcher');
         const qrModal = document.getElementById('qr-modal');
         const closeQrModalBtn = document.getElementById('close-qr-modal-btn');
+        // NEW Selector for the header button
+        const qrHeaderBtn = document.getElementById('qr-header-btn'); 
         const rewardsModal = document.getElementById('rewards-modal');
         const rewardsModalContent = document.getElementById('rewards-modal-content');
         const closeRewardsModalBtn = document.getElementById('close-rewards-modal-btn');
@@ -676,8 +683,9 @@
         
         // Template for the Eco Card (Header Card)
         const generateEcoCard = (data) => `
-            <div class="mb-6 animate-fadeIn cursor-pointer" id="eco-card" style="animation-delay: 0ms;">
-                <div class="relative w-full aspect-[1.7/1] rounded-3xl overflow-hidden shadow-2xl transition-transform transform hover:scale-[1.02] duration-500 group">
+            <!-- Removed cursor-pointer and id="eco-card" click handler functionality -->
+            <div class="mb-6 animate-fadeIn" id="eco-card" style="animation-delay: 0ms;">
+                <div class="relative w-full aspect-[1.7/1] rounded-3xl overflow-hidden shadow-2xl transition-transform transform duration-500 group">
                     <!-- Background Gradient -->
                     <div class="absolute inset-0 bg-gradient-to-br ${data.heroBgClasses}"></div>
                     <!-- Decorative Elements -->
@@ -769,10 +777,10 @@
                         <div class="p-2.5 rounded-xl bg-green-50 text-green-600 w-fit mb-3">
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 2-8.49V10Z"/></svg>
                         </div>
-                        <p class="text-slate-500 text-xs font-medium mb-1">إجمالي نقاط التأثير (الرواد)</p>
+                        <p class="text-slate-500 text-xs font-medium mb-1">إجمالي نقاط التأثير (أعمال)</p>
                         <div class="text-2xl font-bold text-slate-800 tabular-nums">${data.topCompetitors[0].points.toLocaleString('ar-SA')}</div>
                         <span class="text-green-500 text-xs mt-1 block flex items-center gap-1">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="12 17 12 7 19 7"/></svg>
+
                             +15% عن الربع الماضي
                         </span>
                     </div>
@@ -782,10 +790,10 @@
                         <div class="p-2.5 rounded-xl bg-cyan-50 text-cyan-600 w-fit mb-3">
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14.5V20a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5.5"/><path d="M18 14l-6 6-6-6"/><path d="M12 4v16"/></svg>
                         </div>
-                        <p class="text-slate-500 text-xs font-medium mb-1">الأثر البيئي (طن $\text{CO}_2$)</p>
+                        <p class="text-slate-500 text-xs font-medium mb-1">الأثر البيئي </p>
                         <div class="text-2xl font-bold text-slate-800 tabular-nums">${data.totalImpact.toFixed(1)} طن</div>
                         <span class="text-red-500 text-xs mt-1 block flex items-center gap-1">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="12 7 12 17 19 17"/></svg>
+                            
                             -3% في الربع الأخير
                         </span>
                     </div>
@@ -936,20 +944,20 @@
                             <div class="flex items-center gap-2 border-b border-slate-50 pb-2">
                                 <span class="text-yellow-500 font-bold w-4">#1</span>
                                 <span class="text-2xl" style="line-height: 1;">🥇</span>
-                                <span class="text-slate-800 font-bold flex-1">${data === individualData ? 'محمد علي' : 'سابك'}</span>
-                                <span class="${data.accentColor} font-bold tabular-nums">${data === individualData ? '5.2k' : '15.2k'}</span>
+                                <span class="text-slate-800 font-bold flex-1">${data === individualData ? 'محمد علي' : 'علم'}</span>
+                                <span class="${data.accentColor} font-bold tabular-nums">${data === individualData ? '4.9k' : '50.2k'}</span>
                             </div>
                             <div class="flex items-center gap-2 border-b border-slate-50 pb-2">
                                 <span class="text-gray-400 font-bold w-4">#2</span>
                                 <span class="text-2xl" style="line-height: 1;">🥈</span>
-                                <span class="text-slate-600 font-medium flex-1">${data === individualData ? 'سارة عبدالله' : 'أسمنت القصيم'}</span>
-                                <span class="text-slate-500 font-bold tabular-nums">${data === individualData ? '2.8k' : '12.8k'}</span>
+                                <span class="text-slate-600 font-medium flex-1">${data === individualData ? 'سارة عبدالله' : 'سدايا'}</span>
+                                <span class="text-slate-500 font-bold tabular-nums">${data === individualData ? '4.8k' : '44.8k'}</span>
                             </div>
                             <div class="flex items-center gap-2">
                                 <span class="text-yellow-700/50 font-bold w-4">#3</span>
                                 <span class="text-2xl" style="line-height: 1;">🥉</span>
-                                <span class="text-slate-600 font-medium flex-1">${data === individualData ? 'نورة خالد' : 'موبايلي'}</span>
-                                <span class="text-slate-500 font-bold tabular-nums">${data === individualData ? '1.5k' : '11.5k'}</span>
+                                <span class="text-slate-600 font-medium flex-1">${data === individualData ? 'نورة خالد' : 'سابك'}</span>
+                                <span class="text-slate-500 font-bold tabular-nums">${data === individualData ? '3.7k' : '30.5k'}</span>
                             </div>
                         </div>
                     </div>
@@ -1418,21 +1426,21 @@
         
         /** Attaches all dynamic event listeners (called after DOM rendering) */
         function attachEventListeners() {
-            // 1. Eco Card Click -> Open QR Modal
-            const ecoCard = document.getElementById('eco-card');
-            if (ecoCard) {
-                ecoCard.onclick = () => {
-                    const data = currentMode === 'individuals' ? individualData : businessData;
-                    const qrDisplay = document.getElementById('qr-code-display');
-                    if (qrDisplay) {
-                        qrDisplay.classList.remove('border-emerald-500', 'border-blue-500');
-                        qrDisplay.classList.add(data.qrCodeBorder);
-                    }
-                    if(qrModal && document.getElementById('qr-modal-content')) {
-                        openModal(qrModal, document.getElementById('qr-modal-content'));
-                    }
-                };
-            }
+            // 1. Eco Card Click -> Open QR Modal (REMOVED THIS FUNCTIONALITY PER USER REQUEST)
+            // const ecoCard = document.getElementById('eco-card');
+            // if (ecoCard) {
+            //     ecoCard.onclick = () => {
+            //         const data = currentMode === 'individuals' ? individualData : businessData;
+            //         const qrDisplay = document.getElementById('qr-code-display');
+            //         if (qrDisplay) {
+            //             qrDisplay.classList.remove('border-emerald-500', 'border-blue-500');
+            //             qrDisplay.classList.add(data.qrCodeBorder);
+            //         }
+            //         if(qrModal && document.getElementById('qr-modal-content')) {
+            //             openModal(qrModal, document.getElementById('qr-modal-content'));
+            //         }
+            //     };
+            // }
             
             // 2. Rewards Banner Click -> Open Rewards Modal (Only for Individuals)
             const rewardsBanner = document.getElementById('rewards-banner');
@@ -1686,11 +1694,29 @@
             document.getElementById('bell-btn').classList.remove('animate-pulse-soft'); 
         }});
         
+        // 3. New QR Header Button Click Handler
+        if (qrHeaderBtn) {
+            qrHeaderBtn.addEventListener('click', () => {
+                const data = currentMode === 'individuals' ? individualData : businessData;
+                const qrDisplay = document.getElementById('qr-code-display');
+                if (qrDisplay) {
+                    // Update QR content before opening
+                    qrDisplay.classList.remove('border-emerald-500', 'border-blue-500');
+                    qrDisplay.classList.add(data.qrCodeBorder);
+                }
+                if(qrModal && document.getElementById('qr-modal-content')) {
+                    openModal(qrModal, document.getElementById('qr-modal-content'));
+                }
+            });
+        }
+
+
         window.addEventListener('scroll', () => {
             const scrollY = window.scrollY;
             const data = currentMode === 'individuals' ? individualData : (currentMode === 'business' ? businessData : executiveData);
             const isExecutive = currentMode === 'executives';
             const aiBtn = document.getElementById('ai-btn');
+            const qrBtn = document.getElementById('qr-header-btn'); // NEW selector
             
             // Header Styles
             if (scrollY > 50) {
@@ -1705,6 +1731,10 @@
                 document.getElementById('bell-btn').classList.remove('bg-white/20', 'text-white', 'hover:bg-white/30');
                 document.getElementById('bell-btn').classList.add('bg-slate-100', 'text-slate-800', 'hover:bg-slate-200');
                 
+                // NEW: QR Header Button (Neutral/Scrolled)
+                qrBtn.classList.remove('bg-white/20', 'text-white', 'hover:bg-white/30');
+                qrBtn.classList.add('bg-slate-100', 'text-slate-800', 'hover:bg-slate-200');
+
                 // AI Button (Neutral/Scrolled)
                 aiBtn.classList.remove('bg-emerald-500/80', 'bg-blue-500/80', 'bg-cyan-600/80', 'text-white');
                 aiBtn.classList.add('bg-slate-100', 'text-slate-800');
@@ -1723,6 +1753,10 @@
                 document.getElementById('bell-btn').classList.remove('bg-slate-100', 'text-slate-800', 'hover:bg-slate-200');
                 document.getElementById('bell-btn').classList.add('bg-white/20', 'text-white', 'hover:bg-white/30');
                 
+                // NEW: QR Header Button (Colored/Top)
+                qrBtn.classList.remove('bg-slate-100', 'text-slate-800', 'hover:bg-slate-200');
+                qrBtn.classList.add('bg-white/20', 'text-white', 'hover:bg-white/30');
+
                 // AI Button (Colored/Top)
                 aiBtn.classList.remove('bg-slate-100', 'text-slate-800');
                 if (currentMode === 'individuals') {
